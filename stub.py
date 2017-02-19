@@ -57,25 +57,32 @@ def send_to_cassandra(rdd: RDD, table_name: str) -> None:
 
 ########## Spark Streaming Setup ##########
 
-def createContext():
+checkpoint_directory = "/chckdir"
+
+def create_context():
 	# Create a conf object to hold connection information
-sp_conf = SparkConf()
+    sp_conf = SparkConf()
 
-# Set the cassandra host address - NOTE: you will have to set this to the
-# address of your VM if you run this on the cluster. If you are running
-# the streaming job locally on your VM you should set this to "localhost"
-sp_conf.set("spark.cassandra.connection.host", "localhost")
+    # Set the cassandra host address - NOTE: you will have to set this to the
+    # address of your VM if you run this on the cluster. If you are running
+    # the streaming job locally on your VM you should set this to "localhost"
+    sp_conf.set("spark.cassandra.connection.host", "localhost")
 
-# Create the spark context object.
-# For local development it is very important to use "local[2]" as Spark
-# Streaming needs 2 cores minimum to function properly
-SC = SparkContext(master="local[2]", appName="Event Processing", conf=sp_conf)
+    # Create the spark context object.
+    # For local development it is very important to use "local[2]" as Spark
+    # Streaming needs 2 cores minimum to function properly
+    SC = SparkContext(master="local[2]", appName="Event Processing", conf=sp_conf)
 
-#Set the batch interval in seconds
-BATCH_INTERVAL = 10
+    #Set the batch interval in seconds
+    BATCH_INTERVAL = 10
 
-#Create the streaming context object
-SSC = StreamingContext(SC, BATCH_INTERVAL)
+    #Create the streaming context object
+    SSC = StreamingContext(SC, BATCH_INTERVAL)
+    SSC.checkpoint(checkpoint_directory)
+    return SCC
+
+
+SCC.getOrCreate(checkpoint_directory, create_context)
 
 ########## Kafka Setup ##########
 
