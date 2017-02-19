@@ -87,7 +87,7 @@ SSC = StreamingContext(SC, BATCH_INTERVAL)
 # consuming from the production stream a higher number is recommended.
 topic_name = "dev-stream"
 client_id_for_broker = "160620337"
-num_of_partition_to_consume_from = 1
+num_of_partitions_to_consume_from = 1
 RAW_MESSAGES = KafkaUtils.createStream(SSC,
                                        "34.248.133.47:2181",
                                        client_id_for_broker,
