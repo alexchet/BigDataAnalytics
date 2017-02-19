@@ -57,7 +57,8 @@ def send_to_cassandra(rdd: RDD, table_name: str) -> None:
 
 ########## Spark Streaming Setup ##########
 
-# Create a conf object to hold connection information
+def createContext():
+	# Create a conf object to hold connection information
 sp_conf = SparkConf()
 
 # Set the cassandra host address - NOTE: you will have to set this to the
@@ -93,7 +94,12 @@ RAW_MESSAGES = KafkaUtils.createStream(SSC,
                                        client_id_for_broker,
                                        {topic_name: num_of_partitions_to_consume_from})
 
+unifiedStream = RAW_MESSAGES.map(lambda x: x)
+
 ########## Window the incoming batches ##########
+
+rddBatched = unifiedStream.reduceByKeyAndWindow(lambda x: x, 120, 60)
+rddBatched.pprint();
 
 ########## Convert each message from json into a dictionary ##########
 
