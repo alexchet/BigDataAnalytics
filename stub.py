@@ -82,7 +82,7 @@ def create_context():
     return SCC
 
 
-SCC.getOrCreate(checkpoint_directory, create_context)
+SCC = StreamingContext.getOrCreate(checkpoint_directory, create_context)
 
 ########## Kafka Setup ##########
 
