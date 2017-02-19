@@ -108,14 +108,14 @@ RAW_MESSAGES = KafkaUtils.createStream(SSC,
 # Convert each element of the rdd_example rdd into a Row
 # NOTE: This is just example code please rename the DStreams and Row fields to
 # match those in your Cassandra table
-row_rdd_example = rrd_example.map(lambda x: Row(field1=x[0],
-                                                field2=x[1],
-                                                field3=x[2],
-                                                field4=x[3],
-                                                field5=x[4]))
+#row_rdd_example = rrd_example.map(lambda x: Row(field1=x[0],
+#                                                field2=x[1],
+#                                                field3=x[2],
+#                                                field4=x[3],
+#                                                field5=x[4]))
 
 # Convert each rdd of Rows in the DStream into a DataFrame and send to Cassandra
-row_rdd_example.foreachRDD(lambda rdd: send_to_cassandra(rdd, your_table_name))
+#row_rdd_example.foreachRDD(lambda rdd: send_to_cassandra(rdd, your_table_name))
 
 ############################## Task 2 ##############################
 
