@@ -57,7 +57,7 @@ def send_to_cassandra(rdd: RDD, table_name: str) -> None:
 
 ########## Spark Streaming Setup ##########
 
-checkpoint_directory = "/chckdir"
+checkpoint_directory = "chckdir/"
 
 def create_context():
 	# Create a conf object to hold connection information
@@ -79,10 +79,10 @@ def create_context():
     #Create the streaming context object
     SSC = StreamingContext(SC, BATCH_INTERVAL)
     SSC.checkpoint(checkpoint_directory)
-    return SCC
+    return SSC
 
 
-SCC = StreamingContext.getOrCreate(checkpoint_directory, create_context)
+context = StreamingContext.getOrCreate(checkpoint_directory, create_context)
 
 ########## Kafka Setup ##########
 
@@ -96,17 +96,14 @@ SCC = StreamingContext.getOrCreate(checkpoint_directory, create_context)
 topic_name = "dev-stream"
 client_id_for_broker = "160620337"
 num_of_partitions_to_consume_from = 1
-RAW_MESSAGES = KafkaUtils.createStream(SSC,
+RAW_MESSAGES = KafkaUtils.createStream(context,
                                        "34.248.133.47:2181",
                                        client_id_for_broker,
                                        {topic_name: num_of_partitions_to_consume_from})
 
-unifiedStream = RAW_MESSAGES.map(lambda x: x)
-
 ########## Window the incoming batches ##########
 
-rddBatched = unifiedStream.reduceByKeyAndWindow(lambda x: x, 120, 60)
-rddBatched.pprint();
+RAW_MESSAGES.pprint();
 
 ########## Convert each message from json into a dictionary ##########
 
@@ -137,5 +134,5 @@ rddBatched.pprint();
 #### Write the Task 2 results to cassandra ####
 
 # Initiate the stream processing
-SSC.start()
-SSC.awaitTermination()
+context.start()
+context.awaitTermination()
