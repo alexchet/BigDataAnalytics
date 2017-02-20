@@ -59,16 +59,18 @@ def send_to_cassandra(rdd: RDD, table_name: str) -> None:
 
 checkpoint_directory = "chckdir/"
 
+
+# Create a conf object to hold connection information
+sp_conf = SparkConf()
+
+
+# Set the cassandra host address - NOTE: you will have to set this to the
+# address of your VM if you run this on the cluster. If you are running
+# the streaming job locally on your VM you should set this to "localhost"
+sp_conf.set("spark.cassandra.connection.host", "localhost")
+
 def create_context():
-	# Create a conf object to hold connection information
-    sp_conf = SparkConf()
-
-    # Set the cassandra host address - NOTE: you will have to set this to the
-    # address of your VM if you run this on the cluster. If you are running
-    # the streaming job locally on your VM you should set this to "localhost"
-    sp_conf.set("spark.cassandra.connection.host", "localhost")
-
-    # Create the spark context object.
+	# Create the spark context object.
     # For local development it is very important to use "local[2]" as Spark
     # Streaming needs 2 cores minimum to function properly
     SC = SparkContext(master="local[2]", appName="Event Processing", conf=sp_conf)
