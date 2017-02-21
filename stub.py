@@ -4,6 +4,9 @@ from pyspark import SparkContext, SparkConf, RDD
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 from pyspark.sql import SparkSession, Row
+import json
+import time
+import datetime
 
 def getSparkSessionInstance(sparkConf: SparkConf) -> SparkSession:
     """ This method ensures that there is only ever one instance of the Spark
@@ -57,34 +60,24 @@ def send_to_cassandra(rdd: RDD, table_name: str) -> None:
 
 ########## Spark Streaming Setup ##########
 
-checkpoint_directory = "chckdir/"
-
-
 # Create a conf object to hold connection information
 sp_conf = SparkConf()
-
 
 # Set the cassandra host address - NOTE: you will have to set this to the
 # address of your VM if you run this on the cluster. If you are running
 # the streaming job locally on your VM you should set this to "localhost"
 sp_conf.set("spark.cassandra.connection.host", "localhost")
 
-def create_context():
-	# Create the spark context object.
-    # For local development it is very important to use "local[2]" as Spark
-    # Streaming needs 2 cores minimum to function properly
-    SC = SparkContext(master="local[2]", appName="Event Processing", conf=sp_conf)
+# Create the spark context object.
+# For local development it is very important to use "local[2]" as Spark
+# Streaming needs 2 cores minimum to function properly
+SC = SparkContext(master="local[2]", appName="Event Processing", conf=sp_conf)
 
-    #Set the batch interval in seconds
-    BATCH_INTERVAL = 10
+#Set the batch interval in seconds
+BATCH_INTERVAL = 10
 
-    #Create the streaming context object
-    SSC = StreamingContext(SC, BATCH_INTERVAL)
-    SSC.checkpoint(checkpoint_directory)
-    return SSC
-
-
-context = StreamingContext.getOrCreate(checkpoint_directory, create_context)
+#Create the streaming context object
+SSC = StreamingContext(SC, BATCH_INTERVAL)
 
 ########## Kafka Setup ##########
 
@@ -95,21 +88,30 @@ context = StreamingContext.getOrCreate(checkpoint_directory, create_context)
 # Also edit the topic_name you would like to pull messages from and the number
 # of partitions to consume on that topic. For development 1 is fine, for 
 # consuming from the production stream a higher number is recommended.
+
+SC.setLogLevel("ERROR")
+
 topic_name = "dev-stream"
 client_id_for_broker = "160620337"
 num_of_partitions_to_consume_from = 1
-RAW_MESSAGES = KafkaUtils.createStream(context,
+RAW_MESSAGES = KafkaUtils.createStream(SSC,
                                        "34.248.133.47:2181",
                                        client_id_for_broker,
                                        {topic_name: num_of_partitions_to_consume_from})
 
 ########## Window the incoming batches ##########
 
-RAW_MESSAGES.pprint();
+raw_windowed = RAW_MESSAGES.window(60, 30)
 
 ########## Convert each message from json into a dictionary ##########
 
+parsed = raw_windowed.map(lambda x: json.loads(x[1]))
+
 ########## Find the minimum timestamp for window ##########
+
+timestamps = parsed.map(lambda x: int(time.mktime(datetime.datetime.strptime(x['timestamp'], "%Y-%m-%dT%H:%M:%S").timetuple())))
+min_timestamp = timestamps.reduce(min)
+min_timestamp.pprint(1)
 
 ############################## Task 1 ##############################
 
@@ -136,5 +138,5 @@ RAW_MESSAGES.pprint();
 #### Write the Task 2 results to cassandra ####
 
 # Initiate the stream processing
-context.start()
-context.awaitTermination()
+SSC.start()
+SSC.awaitTermination()
